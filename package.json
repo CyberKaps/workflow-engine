@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "prisma skills sync || exit 0",
-    "dev": "tsx src/server.ts"
+    "dev": "tsx src/server.ts",
+    "worker": "tsx src/worker/index.ts"
   },
   "keywords": [],
   "author": "",

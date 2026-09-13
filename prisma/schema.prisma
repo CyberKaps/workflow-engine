@@ -19,6 +19,7 @@ model Job {
   type        String
   payload     Json
   status      JobStatus @default(PENDING)
+  attempts Int @default(0)
 
   createdAt   DateTime  @default(now())
   startedAt   DateTime?

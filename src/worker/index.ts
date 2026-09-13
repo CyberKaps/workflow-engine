@@ -12,9 +12,13 @@ const prisma = new PrismaClient({ adapter });
 async function processJob() {
   const job = await prisma.$transaction(async (tx) => {
     const jobs = await tx.$queryRaw<
-      { id: string; type: string; payload: unknown }[]
+      { id: string; 
+        type: string; 
+        attempts: number;
+        payload: unknown 
+      }[]
     >`
-      SELECT id, type, payload
+      SELECT id, type, payload, attempts
       FROM "Job"
       WHERE status = 'PENDING'
       ORDER BY "createdAt" ASC
@@ -35,6 +39,9 @@ async function processJob() {
       data: {
         status: "RUNNING",
         startedAt: new Date(),
+        attempts: {
+          increment: 1,
+        },
       },
     });
 
@@ -49,7 +56,7 @@ async function processJob() {
 
   try {
 
-  // throw new Error("Something went wrong");
+  // throw new Error("Testing retry");
 
   // Simulate actual work
   await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -68,14 +75,33 @@ async function processJob() {
   } catch (error) {
     console.error(`Job ${job.id} failed`, error);
 
-    await prisma.job.update({
-      where: {
-        id: job.id,
-      },
-      data: {
-        status: "FAILED",
-      },
-    });
+    const MAX_ATTEMPTS = 3;
+
+    if (job.attempts < MAX_ATTEMPTS) {
+      await prisma.job.update({
+        where: {
+          id: job.id,
+        },
+        data: {
+          status: "PENDING",
+        },
+      });
+
+      console.log(
+        `Retrying job ${job.id} (${job.attempts}/${MAX_ATTEMPTS})`
+      );
+    } else {
+      await prisma.job.update({
+        where: {
+          id: job.id,
+        },
+        data: {
+          status: "FAILED",
+        },
+      });
+
+      console.log(`Job ${job.id} permanently failed`);
+    }
   }
 } 
 

@@ -29,6 +29,8 @@ async function processJob(workerId: string) {
 
     const job = jobs[0];
 
+    
+
     if (!job) {
       return null;
     }
@@ -53,6 +55,8 @@ async function processJob(workerId: string) {
   if (!job) {
     return;
   }
+
+  const currentAttempt = job.attempts + 1;
 
   console.log(`Processing job ${job.id}`);
 
@@ -80,7 +84,7 @@ async function processJob(workerId: string) {
 
     const MAX_ATTEMPTS = 3;
 
-    if (job.attempts < MAX_ATTEMPTS) {
+    if (currentAttempt < MAX_ATTEMPTS) {
 
       const delaySeconds = Math.pow(2, job.attempts);
       const nextRunAt = new Date(Date.now() + delaySeconds * 1000);
@@ -96,7 +100,7 @@ async function processJob(workerId: string) {
       });
 
       console.log(
-        `Retrying job ${job.id} (${job.attempts}/${MAX_ATTEMPTS})`
+        `Retrying job ${job.id} (${currentAttempt}/${MAX_ATTEMPTS})`
       );
     } else {
       await prisma.job.update({

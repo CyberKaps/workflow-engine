@@ -47,6 +47,10 @@ async function processJob() {
 
   console.log(`Processing job ${job.id}`);
 
+  try {
+
+  // throw new Error("Something went wrong");
+
   // Simulate actual work
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
@@ -60,8 +64,20 @@ async function processJob() {
     },
   });
 
-  console.log(`Completed job ${job.id}`);
-}
+    console.log(`Completed job ${job.id}`);
+  } catch (error) {
+    console.error(`Job ${job.id} failed`, error);
+
+    await prisma.job.update({
+      where: {
+        id: job.id,
+      },
+      data: {
+        status: "FAILED",
+      },
+    });
+  }
+} 
 
 async function startWorker() {
   console.log("Worker started");

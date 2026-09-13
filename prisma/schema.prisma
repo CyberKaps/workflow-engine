@@ -24,4 +24,5 @@ model Job {
   createdAt   DateTime  @default(now())
   startedAt   DateTime?
   completedAt DateTime?
+  nextRunAt   DateTime?
 }

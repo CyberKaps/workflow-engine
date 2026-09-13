@@ -21,6 +21,7 @@ async function processJob() {
       SELECT id, type, payload, attempts
       FROM "Job"
       WHERE status = 'PENDING'
+        AND ("nextRunAt" IS NULL OR "nextRunAt" <= NOW())
       ORDER BY "createdAt" ASC
       FOR UPDATE SKIP LOCKED
       LIMIT 1
@@ -56,34 +57,39 @@ async function processJob() {
 
   try {
 
-  // throw new Error("Testing retry");
+  throw new Error("Testing retry");
 
   // Simulate actual work
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  await prisma.job.update({
-    where: {
-      id: job.id,
-    },
-    data: {
-      status: "COMPLETED",
-      completedAt: new Date(),
-    },
-  });
+  // await prisma.job.update({
+  //   where: {
+  //     id: job.id,
+  //   },
+  //   data: {
+  //     status: "COMPLETED",
+  //     completedAt: new Date(),
+  //   },
+  // });
 
-    console.log(`Completed job ${job.id}`);
+  //   console.log(`Completed job ${job.id}`);
   } catch (error) {
     console.error(`Job ${job.id} failed`, error);
 
     const MAX_ATTEMPTS = 3;
 
     if (job.attempts < MAX_ATTEMPTS) {
+
+      const delaySeconds = Math.pow(2, job.attempts);
+      const nextRunAt = new Date(Date.now() + delaySeconds * 1000);
+
       await prisma.job.update({
         where: {
           id: job.id,
         },
         data: {
           status: "PENDING",
+          nextRunAt,
         },
       });
 

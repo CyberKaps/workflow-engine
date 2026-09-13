@@ -9,7 +9,7 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-async function processJob() {
+async function processJob(workerId: string) {
   const job = await prisma.$transaction(async (tx) => {
     const jobs = await tx.$queryRaw<
       { id: string; 
@@ -43,6 +43,7 @@ async function processJob() {
         attempts: {
           increment: 1,
         },
+        workerId: workerId,
       },
     });
 
@@ -57,22 +58,23 @@ async function processJob() {
 
   try {
 
-  throw new Error("Testing retry");
+  // throw new Error("Testing retry");
 
   // Simulate actual work
-  // await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 30000));
 
-  // await prisma.job.update({
-  //   where: {
-  //     id: job.id,
-  //   },
-  //   data: {
-  //     status: "COMPLETED",
-  //     completedAt: new Date(),
-  //   },
-  // });
+  await prisma.job.update({
+    where: {
+      id: job.id,
+    },
+    data: {
+      status: "COMPLETED",
+      completedAt: new Date(),
+       workerId: null,
+    },
+  });
 
-  //   console.log(`Completed job ${job.id}`);
+    console.log(`Completed job ${job.id}`);
   } catch (error) {
     console.error(`Job ${job.id} failed`, error);
 
@@ -112,13 +114,40 @@ async function processJob() {
 } 
 
 async function startWorker() {
-  console.log("Worker started");
+  const worker = await prisma.worker.create({
+    data: {
+      lastHeartbeat: new Date(),
+    },
+  });
+
+  console.log(`Worker started: ${worker.id}`);
+
+  setInterval(() => {
+    sendHeartbeat(worker.id).catch((error) => {
+      console.error("Heartbeat failed:", error);
+    });
+  }, 5000);
 
   while (true) {
-    await processJob();
+    await processJob(worker.id);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 
 startWorker();
+
+
+
+async function sendHeartbeat(workerId: string) {
+  await prisma.worker.update({
+    where: {
+      id: workerId,
+    },
+    data: {
+      lastHeartbeat: new Date(),
+    },
+  });
+
+  console.log(`❤️ Heartbeat: ${workerId}`);
+}

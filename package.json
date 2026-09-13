@@ -8,7 +8,8 @@
     "postinstall": "prisma skills sync || exit 0",
     "dev": "tsx src/server.ts",
     "worker": "tsx src/worker/index.ts",
-    "worker2": "tsx src/worker2/index.ts"
+    "worker2": "tsx src/worker2/index.ts",
+    "monitor": "tsx src/monitor.ts"
 
   },
   "keywords": [],

@@ -25,4 +25,15 @@ model Job {
   startedAt   DateTime?
   completedAt DateTime?
   nextRunAt   DateTime?
+
+  workerId    String?
+  worker      Worker?   @relation(fields: [workerId], references: [id])
+}
+
+model Worker {
+  id        String   @id @default(cuid())
+  lastHeartbeat DateTime
+
+  jobs      Job[]
+  createdAt DateTime @default(now())
 }

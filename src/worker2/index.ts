@@ -65,11 +65,26 @@ async function processJob(workerId: string) {
   // throw new Error("Testing retry");
 
   // Simulate actual work
-  await new Promise((resolve) => setTimeout(resolve, 30000));
+  // await new Promise((resolve) => setTimeout(resolve, 30000));
 
-  await prisma.job.update({
+  for (let i = 0; i < 30; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const ownsJob = await stillOwnsJob(job.id, workerId);
+
+    if (!ownsJob) {
+      console.log(
+        `🛑 Stopping stale execution for job ${job.id}`
+      );
+      return;
+    }
+  }
+
+  const result = await prisma.job.updateMany({
     where: {
       id: job.id,
+      status: "RUNNING",
+      workerId: workerId,
     },
     data: {
       status: "COMPLETED",
@@ -77,6 +92,13 @@ async function processJob(workerId: string) {
        workerId: null,
     },
   });
+
+  if (result.count === 0) {
+    console.log(
+      `⚠️ Job ${job.id} is no longer owned by worker ${workerId}`
+    );
+    return;
+  }
 
     console.log(`Completed job ${job.id}`);
   } catch (error) {
@@ -154,4 +176,19 @@ async function sendHeartbeat(workerId: string) {
   });
 
   console.log(`❤️ Heartbeat: ${workerId}`);
+}
+
+async function stillOwnsJob(jobId: string, workerId: string) {
+  const job = await prisma.job.findFirst({
+    where: {
+      id: jobId,
+      status: "RUNNING",
+      workerId: workerId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return job !== null;
 }

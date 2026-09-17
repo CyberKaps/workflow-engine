@@ -11,53 +11,15 @@ This project demonstrates job queues, multiple workers, atomic job claiming, ret
 
 ## Architecture
 
-```text
-                         ┌──────────────┐
-                         │    Client    │
-                         └──────┬───────┘
-                                │
-                                ▼
-                         ┌──────────────┐
-                         │     API      │
-                         └──────┬───────┘
-                                │
-                         Create Job
-                                │
-                                ▼
-                    ┌────────────────────────┐
-                    │      PostgreSQL        │
-                    │                        │
-                    │   Jobs     Workers     │
-                    └───────┬─────────┬──────┘
-                            │         │
-                     Claim Jobs       │ Heartbeat
-                            │         │
-                  ┌─────────┴───┐     │
-                  ▼             ▼     │
-           ┌────────────┐ ┌────────────┐
-           │  Worker 1  │ │  Worker 2  │
-           └──────┬─────┘ └──────┬─────┘
-                  │              │
-                  └──────┬───────┘
-                         │
-                    Execute Jobs
-                         │
-                         ▼
-                    Update Job
+![Job Execution Architecture](image.png)
 
+This diagram shows the main flow:
 
-                         ┌──────────────┐
-                         │   Monitor    │
-                         └──────┬───────┘
-                                │
-                         Check Heartbeats
-                                │
-                                ▼
-                        Detect Dead Worker
-                                │
-                                ▼
-                         Recover Jobs
-````
+- the API creates jobs
+- PostgreSQL stores the queue and job state
+- workers claim and execute jobs with atomic locking
+- each worker sends heartbeats to the monitor
+- the monitor detects dead workers and reclaims their unfinished jobs
 
 ---
 

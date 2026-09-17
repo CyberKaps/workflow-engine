@@ -633,5 +633,3 @@ This makes it a useful learning project, but not a drop-in production queue syst
 ## License
 
 This project is for learning and experimentation.
-
-```

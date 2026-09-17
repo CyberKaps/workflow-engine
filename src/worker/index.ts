@@ -140,8 +140,20 @@ async function processJob(workerId: string) {
 } 
 
 async function startWorker() {
-  const worker = await prisma.worker.create({
-    data: {
+
+  const workerKey = process.env.WORKER_ID!;
+
+  const worker = await prisma.worker.upsert({
+    where: {
+      workerKey,
+    },
+    update: {
+      status: "ACTIVE",
+      lastHeartbeat: new Date(),
+    },
+    create: {
+      workerKey,
+      status: "ACTIVE",
       lastHeartbeat: new Date(),
     },
   });

@@ -37,6 +37,7 @@ model Job {
 
 model Worker {
   id        String   @id @default(cuid())
+  workerKey     String        @unique
   lastHeartbeat DateTime
   status        WorkerStatus  @default(ACTIVE)
   jobs      Job[]
